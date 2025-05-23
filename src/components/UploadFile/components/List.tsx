@@ -1,4 +1,4 @@
-import { Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import { useUploadedFilesAtom } from 'state';
 import {
   BlueStatusIcon,
@@ -46,7 +46,21 @@ export default function List() {
             justifyContent='space-between'
           >
             <Stack gap='4px' direction='row' alignItems='center'>
-              {isRejected ? <CloseIcon /> : <CheckIcon />}
+              {isRejected ? (
+                <CloseIcon />
+              ) : isUploading ? (
+                <Box
+                  width='13px'
+                  height='14px'
+                  display='flex'
+                  alignItems='center'
+                  justifyContent='center'
+                >
+                  <Box className='loader' />
+                </Box>
+              ) : (
+                <CheckIcon />
+              )}
               <Typography
                 fontFamily='InterTight'
                 fontSize='14px'
