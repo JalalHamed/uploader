@@ -11,7 +11,7 @@ export default function File() {
   const { getRootProps, getInputProps, acceptedFiles, fileRejections, open } =
     useDropzone({
       accept: { 'image/jpeg': [], 'image/png': [], 'video/mp4': [] },
-      maxSize: 5555 * 1024 * 1024,
+      maxSize: 5555 * 1024 * 1024, // 2MB
       noClick: true,
       noKeyboard: true,
     });
@@ -22,28 +22,42 @@ export default function File() {
     if (!acceptedFiles.length) return;
 
     acceptedFiles.forEach((file) => {
-      const fileWithStatus = { file, status: 'pending' as const };
+      setUploadedFiles((prev) => [
+        ...prev,
+        { file, status: 'pending', progress: 0 },
+      ]);
 
-      setUploadedFiles((prev) => [...prev, fileWithStatus]);
-
-      mutate(file, {
-        onSuccess: () =>
-          setUploadedFiles((prev) =>
-            prev.map((f) =>
-              'status' in f && f.file.name === file.name
-                ? { ...f, status: 'completed' }
-                : f
-            )
-          ),
-        onError: () =>
-          setUploadedFiles((prev) =>
-            prev.map((f) =>
-              'status' in f && f.file.name === file.name
-                ? { ...f, status: 'failed' }
-                : f
-            )
-          ),
-      });
+      mutate(
+        {
+          file,
+          onProgress: (progress: number) =>
+            setUploadedFiles((prev) =>
+              prev.map((f) =>
+                'status' in f && f.file.name === file.name
+                  ? { ...f, progress }
+                  : f
+              )
+            ),
+        },
+        {
+          onSuccess: () =>
+            setUploadedFiles((prev) =>
+              prev.map((f) =>
+                'status' in f && f.file.name === file.name
+                  ? { ...f, status: 'completed', progress: 100 }
+                  : f
+              )
+            ),
+          onError: () =>
+            setUploadedFiles((prev) =>
+              prev.map((f) =>
+                'status' in f && f.file.name === file.name
+                  ? { ...f, status: 'failed' }
+                  : f
+              )
+            ),
+        }
+      );
     });
   }, [acceptedFiles, mutate, setUploadedFiles]);
 
@@ -73,7 +87,6 @@ export default function File() {
       >
         <input {...getInputProps()} style={{ display: 'none' }} />
         <BoxIcon />
-
         <Typography
           sx={{ ...DESCRIPTION_STYLES, color: '#8E949D', textAlign: 'center' }}
         >

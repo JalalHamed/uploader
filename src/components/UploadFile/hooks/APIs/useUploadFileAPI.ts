@@ -12,9 +12,9 @@ export default function useUploadFileAPI() {
   const mutation = useMutation<
     SuccessResponse,
     AxiosError<ErrorResponse>,
-    FileWithPath
+    { file: FileWithPath; onProgress: (progress: number) => void }
   >({
-    mutationFn: async (file) => {
+    mutationFn: async ({ file, onProgress }) => {
       const controller = new AbortController();
       controllerMap.set(file.name, controller);
 
@@ -23,11 +23,17 @@ export default function useUploadFileAPI() {
 
       try {
         const response = await axiosInstance.post<SuccessResponse>(
-          'upload',
+          '/upload',
           formData,
           {
             headers: { 'Content-Type': 'multipart/form-data' },
             signal: controller.signal,
+            onUploadProgress: (event) => {
+              if (event.total) {
+                const percent = Math.round((event.loaded / event.total) * 100);
+                onProgress(percent);
+              }
+            },
           }
         );
         return response.data;

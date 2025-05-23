@@ -32,18 +32,22 @@ export default function List() {
       {uploadedFiles.map((item, index) => {
         const isRejected = 'errors' in item;
         const isUploading = 'status' in item && item.status === 'pending';
-        const file = item.file;
+        const file = 'file' in item ? item.file : null;
+        const progress = 'progress' in item ? item.progress : 0;
 
         return (
-          <Stack
+          <Box
             key={index}
+            position='relative'
             border='1px solid #EDEDED'
             bgcolor='#FAFAFA'
             borderRadius='6px'
             p='6px 10px'
-            direction='row'
+            minHeight='34px'
+            display='flex'
             alignItems='center'
             justifyContent='space-between'
+            overflow='hidden'
           >
             <Stack gap='4px' direction='row' alignItems='center'>
               {isRejected ? (
@@ -61,12 +65,13 @@ export default function List() {
               ) : (
                 <CheckIcon />
               )}
+
               <Typography
                 fontFamily='InterTight'
                 fontSize='14px'
                 lineHeight='13.2px'
               >
-                {truncateFileName(file.name)}
+                {file && truncateFileName(file.name)}
               </Typography>
               <Typography
                 fontFamily='InterTight'
@@ -74,7 +79,7 @@ export default function List() {
                 lineHeight='13.2px'
                 color={isRejected ? '#F13C72' : '#9B9B9B'}
               >
-                ({formatFileSize(file.size)})
+                ({file && formatFileSize(file.size)})
               </Typography>
             </Stack>
 
@@ -112,8 +117,8 @@ export default function List() {
                 borderRadius='8px'
                 sx={{ cursor: 'pointer' }}
                 onClick={() => {
-                  if (isUploading) cancel(file.name);
-                  else if (!isRejected) deleteFile(file.name);
+                  if (isUploading && file) cancel(file.name);
+                  else if (!isRejected && file) deleteFile(file.name);
 
                   setUploadedFiles((prev) =>
                     prev.filter((_, i) => i !== index)
@@ -127,7 +132,30 @@ export default function List() {
                 )}
               </Stack>
             </Stack>
-          </Stack>
+
+            {/* Progress bar at the bottom */}
+            {isUploading && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  height: '4px',
+                  width: '100%',
+                  backgroundColor: '#E0E0E0',
+                }}
+              >
+                <Box
+                  sx={{
+                    height: '100%',
+                    width: `${progress}%`,
+                    backgroundColor: '#4484FF',
+                    transition: 'width 0.3s ease',
+                  }}
+                />
+              </Box>
+            )}
+          </Box>
         );
       })}
     </Stack>
