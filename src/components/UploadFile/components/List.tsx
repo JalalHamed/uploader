@@ -19,8 +19,6 @@ import {
 export default function List() {
   const [uploadedFiles, setUploadedFiles] = useUploadedFilesAtom();
 
-  console.log({ uploadedFiles });
-
   if (!uploadedFiles.length) return null;
   return (
     <Stack gap='9px'>
@@ -29,7 +27,6 @@ export default function List() {
       </Typography>
 
       {uploadedFiles.map((item, index) => {
-        console.log(item);
         const isRejected = isFileRejection(item);
         const file = isRejected ? item.file : item;
 
