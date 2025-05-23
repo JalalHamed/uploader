@@ -9,17 +9,13 @@ import {
   RedStatusIcon,
   RetryIcon,
 } from '../icons';
-import {
-  deleteFile,
-  formatFileSize,
-  getErrorMessage,
-  truncateFileName,
-} from '../utils';
-import { useUploadFileAPI } from '../hooks';
+import { formatFileSize, getErrorMessage, truncateFileName } from '../utils';
+import { useDeleteFileAPI, useUploadFileAPI } from '../hooks';
 
 export default function List() {
   const [uploadedFiles, setUploadedFiles] = useUploadedFilesAtom();
   const { cancel, mutate } = useUploadFileAPI();
+  const { mutate: mutateDelete } = useDeleteFileAPI();
 
   if (!uploadedFiles.length) return null;
 
@@ -179,7 +175,7 @@ export default function List() {
                       prev.filter((_, i) => i !== index)
                     );
                   } else if (!isRejected && file) {
-                    deleteFile(file.name);
+                    mutateDelete(file.name);
                     setUploadedFiles((prev) =>
                       prev.filter((_, i) => i !== index)
                     );
