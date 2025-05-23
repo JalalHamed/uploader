@@ -22,3 +22,30 @@ body,
 #root {
   height: 100%;
 }
+
+.loader {
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  display: block;
+  margin: 15px auto;
+  position: relative;
+  color: #000;
+  box-sizing: border-box;
+  animation: animationLoader 1s linear infinite alternate;
+}
+
+@keyframes animationLoader {
+  0% {
+    box-shadow: -6px -2px, -2px 2px, 2px -2px;
+  }
+  33% {
+    box-shadow: -6px 2px, -2px -2px, 2px 2px;
+  }
+  66% {
+    box-shadow: -6px -2px, -2px 2px, 2px -2px;
+  }
+  100% {
+    box-shadow: -6px 2px, -2px -2px, 2px 2px;
+  }
+}

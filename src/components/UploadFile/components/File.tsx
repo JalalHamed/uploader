@@ -4,7 +4,7 @@ import { useDropzone } from 'react-dropzone';
 import { useUploadedFilesAtom } from 'state';
 import { DESCRIPTION_STYLES, RULES_STYLES } from '../constants';
 import { BoxIcon } from '../icons';
-import { uploadFile } from '../utils';
+import { useUploadFileAPI } from '../hooks';
 
 export default function File() {
   const [, setUploadedFiles] = useUploadedFilesAtom();
@@ -14,21 +14,54 @@ export default function File() {
       accept: {
         'image/jpeg': [],
         'image/png': [],
+        'video/mp4': [],
       },
-      maxSize: 2 * 1024 * 1024,
+      maxSize: 5555 * 1024 * 1024,
       noClick: true,
       noKeyboard: true,
     });
 
+  const { mutate } = useUploadFileAPI();
+
   useEffect(() => {
-    if (!acceptedFiles.length && !fileRejections.length) return;
+    if (!acceptedFiles.length) return;
 
     acceptedFiles.forEach((file) => {
-      uploadFile(file);
-    });
+      const fileWithStatus = {
+        file,
+        status: 'pending' as const,
+      };
 
-    setUploadedFiles((prev) => [...prev, ...acceptedFiles, ...fileRejections]);
-  }, [acceptedFiles, fileRejections, setUploadedFiles]);
+      setUploadedFiles((prev) => [...prev, fileWithStatus]);
+
+      mutate(file, {
+        onSuccess() {
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              'status' in f && f.file.name === file.name
+                ? { ...f, status: 'completed' }
+                : f
+            )
+          );
+        },
+        onError() {
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              'status' in f && f.file.name === file.name
+                ? { ...f, status: 'failed' }
+                : f
+            )
+          );
+        },
+      });
+    });
+  }, [acceptedFiles, mutate, setUploadedFiles]);
+
+  useEffect(() => {
+    if (!fileRejections.length) return;
+
+    setUploadedFiles((prev) => [...prev, ...fileRejections]);
+  }, [fileRejections, setUploadedFiles]);
 
   return (
     <Stack gap='8px' {...getRootProps()}>

@@ -1,6 +1,7 @@
 import { Stack, Typography } from '@mui/material';
 import { useUploadedFilesAtom } from 'state';
 import {
+  BlueStatusIcon,
   CancelIcon,
   CheckIcon,
   CloseIcon,
@@ -12,7 +13,6 @@ import {
   deleteFile,
   formatFileSize,
   getErrorMessage,
-  isFileRejection,
   truncateFileName,
 } from '../utils';
 
@@ -27,8 +27,9 @@ export default function List() {
       </Typography>
 
       {uploadedFiles.map((item, index) => {
-        const isRejected = isFileRejection(item);
-        const file = isRejected ? item.file : item;
+        const isRejected = 'errors' in item;
+        const isUploading = 'status' in item && item.status === 'pending';
+        const file = item.file;
 
         return (
           <Stack
@@ -69,7 +70,13 @@ export default function List() {
                 gap='4px'
                 borderRadius='6px'
               >
-                {isRejected ? <RedStatusIcon /> : <GreenStatusIcon />}
+                {isRejected ? (
+                  <RedStatusIcon />
+                ) : isUploading ? (
+                  <BlueStatusIcon />
+                ) : (
+                  <GreenStatusIcon />
+                )}
                 <Typography
                   fontFamily='InterTight'
                   fontSize='14px'
@@ -77,6 +84,8 @@ export default function List() {
                 >
                   {isRejected
                     ? `Failed — ${getErrorMessage(item.errors[0].code)}`
+                    : isUploading
+                    ? 'Uploading'
                     : 'Completed'}
                 </Typography>
               </Stack>
@@ -86,15 +95,18 @@ export default function List() {
                 borderRadius='8px'
                 sx={{ cursor: 'pointer' }}
                 onClick={() => {
-                  if (!isRejected) {
-                    deleteFile(file.name);
-                    setUploadedFiles((prev) =>
-                      prev.filter((_, i) => i !== index)
-                    );
-                  }
+                  if (!isRejected) deleteFile(file.name);
+
+                  setUploadedFiles((prev) =>
+                    prev.filter((_, i) => i !== index)
+                  );
                 }}
               >
-                {isRejected ? <RetryIcon /> : <CancelIcon />}
+                {isRejected && !getErrorMessage(item.errors[0].code) ? (
+                  <RetryIcon />
+                ) : (
+                  <CancelIcon />
+                )}
               </Stack>
             </Stack>
           </Stack>
