@@ -15,11 +15,14 @@ import {
   getErrorMessage,
   truncateFileName,
 } from '../utils';
+import { useUploadFileAPI } from '../hooks';
 
 export default function List() {
   const [uploadedFiles, setUploadedFiles] = useUploadedFilesAtom();
+  const { cancel } = useUploadFileAPI();
 
   if (!uploadedFiles.length) return null;
+
   return (
     <Stack gap='9px'>
       <Typography fontWeight={500} fontFamily='InterTight'>
@@ -95,7 +98,8 @@ export default function List() {
                 borderRadius='8px'
                 sx={{ cursor: 'pointer' }}
                 onClick={() => {
-                  if (!isRejected) deleteFile(file.name);
+                  if (isUploading) cancel(file.name);
+                  else if (!isRejected) deleteFile(file.name);
 
                   setUploadedFiles((prev) =>
                     prev.filter((_, i) => i !== index)

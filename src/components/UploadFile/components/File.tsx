@@ -8,14 +8,9 @@ import { useUploadFileAPI } from '../hooks';
 
 export default function File() {
   const [, setUploadedFiles] = useUploadedFilesAtom();
-
   const { getRootProps, getInputProps, acceptedFiles, fileRejections, open } =
     useDropzone({
-      accept: {
-        'image/jpeg': [],
-        'image/png': [],
-        'video/mp4': [],
-      },
+      accept: { 'image/jpeg': [], 'image/png': [], 'video/mp4': [] },
       maxSize: 5555 * 1024 * 1024,
       noClick: true,
       noKeyboard: true,
@@ -27,39 +22,33 @@ export default function File() {
     if (!acceptedFiles.length) return;
 
     acceptedFiles.forEach((file) => {
-      const fileWithStatus = {
-        file,
-        status: 'pending' as const,
-      };
+      const fileWithStatus = { file, status: 'pending' as const };
 
       setUploadedFiles((prev) => [...prev, fileWithStatus]);
 
       mutate(file, {
-        onSuccess() {
+        onSuccess: () =>
           setUploadedFiles((prev) =>
             prev.map((f) =>
               'status' in f && f.file.name === file.name
                 ? { ...f, status: 'completed' }
                 : f
             )
-          );
-        },
-        onError() {
+          ),
+        onError: () =>
           setUploadedFiles((prev) =>
             prev.map((f) =>
               'status' in f && f.file.name === file.name
                 ? { ...f, status: 'failed' }
                 : f
             )
-          );
-        },
+          ),
       });
     });
   }, [acceptedFiles, mutate, setUploadedFiles]);
 
   useEffect(() => {
     if (!fileRejections.length) return;
-
     setUploadedFiles((prev) => [...prev, ...fileRejections]);
   }, [fileRejections, setUploadedFiles]);
 
@@ -83,23 +72,17 @@ export default function File() {
         }}
       >
         <input {...getInputProps()} style={{ display: 'none' }} />
-
         <BoxIcon />
 
         <Typography
-          sx={{
-            ...DESCRIPTION_STYLES,
-            color: '#8E949D',
-            textAlign: 'center',
-          }}
+          sx={{ ...DESCRIPTION_STYLES, color: '#8E949D', textAlign: 'center' }}
         >
           Drag & drop a{' '}
-          <Typography component='span' sx={{ ...DESCRIPTION_STYLES }}>
+          <Typography component='span' sx={DESCRIPTION_STYLES}>
             file
           </Typography>
-          <br />
-          or{' '}
-          <Typography component='span' sx={{ ...DESCRIPTION_STYLES }}>
+          <br /> or{' '}
+          <Typography component='span' sx={DESCRIPTION_STYLES}>
             browse
           </Typography>{' '}
           to upload
@@ -132,15 +115,15 @@ export default function File() {
         <Stack gap='6px' alignItems='center'>
           <Typography sx={{ ...RULES_STYLES, color: '#8E949D' }}>
             File must be{' '}
-            <Typography component='span' sx={{ ...RULES_STYLES }}>
+            <Typography component='span' sx={RULES_STYLES}>
               .JPG
             </Typography>{' '}
-            or{' '}
-            <Typography component='span' sx={{ ...RULES_STYLES }}>
+            or
+            <Typography component='span' sx={RULES_STYLES}>
               .PNG
             </Typography>
           </Typography>
-          <Typography sx={{ ...RULES_STYLES }}>Max → 2MB</Typography>
+          <Typography sx={RULES_STYLES}>Max → 2MB</Typography>
         </Stack>
       </Stack>
     </Stack>

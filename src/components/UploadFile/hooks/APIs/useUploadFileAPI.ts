@@ -1,33 +1,51 @@
-import { useMutation, type UseMutationResult } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import axiosInstance from 'config/axios';
 import type { FileWithPath } from 'react-dropzone';
 
-type Data = FileWithPath;
 type SuccessResponse = { message: string };
 type ErrorResponse = { message: string };
 
-export default function useUploadFileAPI(): UseMutationResult<
-  SuccessResponse,
-  AxiosError<ErrorResponse>,
-  Data
-> {
-  return useMutation({
-    mutationFn: async (file: Data) => {
+const controllerMap = new Map<string, AbortController>();
+
+export default function useUploadFileAPI() {
+  const mutation = useMutation<
+    SuccessResponse,
+    AxiosError<ErrorResponse>,
+    FileWithPath
+  >({
+    mutationFn: async (file) => {
+      const controller = new AbortController();
+      controllerMap.set(file.name, controller);
+
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axiosInstance.post<SuccessResponse>(
-        'upload',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      return response.data;
+      try {
+        const response = await axiosInstance.post<SuccessResponse>(
+          'upload',
+          formData,
+          {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            signal: controller.signal,
+          }
+        );
+        return response.data;
+      } finally {
+        controllerMap.delete(file.name);
+      }
     },
   });
+
+  function cancel(fileName: string) {
+    const controller = controllerMap.get(fileName);
+    controller?.abort();
+    controllerMap.delete(fileName);
+  }
+
+  return {
+    mutate: mutation.mutate,
+    cancel,
+    isPending: mutation.isPending,
+  };
 }
