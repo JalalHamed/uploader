@@ -10,7 +10,7 @@ export default function File() {
   const [, setUploadedFiles] = useUploadedFilesAtom();
   const { getRootProps, getInputProps, acceptedFiles, fileRejections, open } =
     useDropzone({
-      accept: { 'image/jpeg': [], 'image/png': [], 'video/mp4': [] },
+      accept: { 'image/jpeg': [], 'image/png': [] },
       maxSize: 2 * 1024 * 1024,
       noClick: true,
       noKeyboard: true,
