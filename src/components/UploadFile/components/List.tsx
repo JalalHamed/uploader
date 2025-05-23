@@ -186,7 +186,6 @@ export default function List() {
                   } else if (isFailed) {
                     handleRetry(item);
                   } else if (isRejected) {
-                    // For other errors just remove the file
                     setUploadedFiles((prev) =>
                       prev.filter((_, i) => i !== index)
                     );

@@ -4,67 +4,59 @@ import { useDropzone } from 'react-dropzone';
 import { useUploadedFilesAtom } from 'state';
 import { DESCRIPTION_STYLES, RULES_STYLES } from '../constants';
 import { BoxIcon } from '../icons';
-import { useUploadFileAPI } from '../hooks';
+import { uploadFile } from '../utils';
 
 export default function File() {
   const [, setUploadedFiles] = useUploadedFilesAtom();
   const { getRootProps, getInputProps, acceptedFiles, fileRejections, open } =
     useDropzone({
       accept: { 'image/jpeg': [], 'image/png': [], 'video/mp4': [] },
-      maxSize: 2 * 1024 * 1024,
+      maxSize: 5555 * 1024 * 1024,
       noClick: true,
       noKeyboard: true,
     });
 
-  const { mutate } = useUploadFileAPI();
-
   useEffect(() => {
     if (!acceptedFiles.length) return;
 
-    acceptedFiles.forEach((file) => {
+    acceptedFiles.forEach(async (file) => {
       setUploadedFiles((prev) => [
         ...prev,
         { file, status: 'pending', progress: 0 },
       ]);
 
-      mutate(
-        {
-          file,
-          onProgress: (progress: number) =>
-            setUploadedFiles((prev) =>
-              prev.map((f) =>
-                'status' in f && f.file.name === file.name
-                  ? { ...f, progress }
-                  : f
-              )
-            ),
-        },
-        {
-          onSuccess: () =>
-            setUploadedFiles((prev) =>
-              prev.map((f) =>
-                'status' in f && f.file.name === file.name
-                  ? { ...f, status: 'completed', progress: 100 }
-                  : f
-              )
-            ),
-          onError: () =>
-            setUploadedFiles((prev) =>
-              prev.map((f) =>
-                'status' in f && f.file.name === file.name
-                  ? {
-                      ...f,
-                      status: 'failed',
-                      progress: 0,
-                      errors: [{ code: 'network-error' }],
-                    }
-                  : f
-              )
-            ),
-        }
-      );
+      try {
+        await uploadFile(file, (progress) => {
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              'file' in f && f.file.name === file.name ? { ...f, progress } : f
+            )
+          );
+        });
+
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            'file' in f && f.file.name === file.name
+              ? { ...f, status: 'completed', progress: 100 }
+              : f
+          )
+        );
+      } catch {
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            'file' in f && f.file.name === file.name
+              ? {
+                  ...f,
+                  status: 'failed',
+                  progress: 0,
+                  errors: [{ code: 'network-error' }],
+                }
+              : f
+          )
+        );
+      }
     });
-  }, [acceptedFiles, mutate, setUploadedFiles]);
+  }, [acceptedFiles, setUploadedFiles]);
 
   useEffect(() => {
     if (!fileRejections.length) return;
