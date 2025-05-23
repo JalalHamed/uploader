@@ -23,28 +23,25 @@ export default function List() {
 
   if (!uploadedFiles.length) return null;
 
-  // Retry logic: reset errors/status, trigger upload again
-  const handleRetry = (fileEntry: UploadEntry, index: number) => {
+  const handleRetry = (fileEntry: UploadEntry) => {
     if (!('file' in fileEntry)) return;
     const file = fileEntry.file;
 
-    // Reset status and errors
     setUploadedFiles((prev) =>
-      prev.map((f, i) =>
-        i === index && 'file' in f
+      prev.map((f) =>
+        'file' in f && f.file.name === file.name
           ? { ...f, status: 'pending', progress: 0, errors: undefined }
           : f
       )
     );
 
-    // Start upload again using mutate from hook
     mutate(
       {
         file,
         onProgress: (progress) => {
           setUploadedFiles((prev) =>
-            prev.map((f, i) =>
-              i === index && 'file' in f ? { ...f, progress } : f
+            prev.map((f) =>
+              'file' in f && f.file.name === file.name ? { ...f, progress } : f
             )
           );
         },
@@ -52,8 +49,8 @@ export default function List() {
       {
         onSuccess: () => {
           setUploadedFiles((prev) =>
-            prev.map((f, i) =>
-              i === index && 'file' in f
+            prev.map((f) =>
+              'file' in f && f.file.name === file.name
                 ? { ...f, status: 'completed', progress: 100 }
                 : f
             )
@@ -61,8 +58,8 @@ export default function List() {
         },
         onError: () => {
           setUploadedFiles((prev) =>
-            prev.map((f, i) =>
-              i === index && 'file' in f
+            prev.map((f) =>
+              'file' in f && f.file.name === file.name
                 ? {
                     ...f,
                     status: 'failed',
@@ -187,7 +184,7 @@ export default function List() {
                       prev.filter((_, i) => i !== index)
                     );
                   } else if (isFailed) {
-                    handleRetry(item, index);
+                    handleRetry(item);
                   } else if (isRejected) {
                     // For other errors just remove the file
                     setUploadedFiles((prev) =>
