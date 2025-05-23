@@ -4,6 +4,8 @@ export default function getErrorMessage(code: string): string {
       return 'Invalid Type';
     case 'file-too-large':
       return 'File too large';
+    case 'network-error':
+      return 'Network Error';
     default:
       return '';
   }

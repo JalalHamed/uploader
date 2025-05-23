@@ -6,6 +6,7 @@ export type UploadEntry =
       file: FileWithPath;
       status: 'pending' | 'completed' | 'failed';
       progress: number; // 0 to 100
+      errors?: [{ code: string }];
     }
   | FileRejection;
 

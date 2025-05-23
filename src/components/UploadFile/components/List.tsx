@@ -1,5 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material';
-import { useUploadedFilesAtom } from 'state';
+import { useUploadedFilesAtom, type UploadEntry } from 'state';
 import {
   BlueStatusIcon,
   CancelIcon,
@@ -19,9 +19,63 @@ import { useUploadFileAPI } from '../hooks';
 
 export default function List() {
   const [uploadedFiles, setUploadedFiles] = useUploadedFilesAtom();
-  const { cancel } = useUploadFileAPI();
+  const { cancel, mutate } = useUploadFileAPI();
 
   if (!uploadedFiles.length) return null;
+
+  // Retry logic: reset errors/status, trigger upload again
+  const handleRetry = (fileEntry: UploadEntry, index: number) => {
+    if (!('file' in fileEntry)) return;
+    const file = fileEntry.file;
+
+    // Reset status and errors
+    setUploadedFiles((prev) =>
+      prev.map((f, i) =>
+        i === index && 'file' in f
+          ? { ...f, status: 'pending', progress: 0, errors: undefined }
+          : f
+      )
+    );
+
+    // Start upload again using mutate from hook
+    mutate(
+      {
+        file,
+        onProgress: (progress) => {
+          setUploadedFiles((prev) =>
+            prev.map((f, i) =>
+              i === index && 'file' in f ? { ...f, progress } : f
+            )
+          );
+        },
+      },
+      {
+        onSuccess: () => {
+          setUploadedFiles((prev) =>
+            prev.map((f, i) =>
+              i === index && 'file' in f
+                ? { ...f, status: 'completed', progress: 100 }
+                : f
+            )
+          );
+        },
+        onError: () => {
+          setUploadedFiles((prev) =>
+            prev.map((f, i) =>
+              i === index && 'file' in f
+                ? {
+                    ...f,
+                    status: 'failed',
+                    progress: 0,
+                    errors: [{ code: 'network-error' }],
+                  }
+                : f
+            )
+          );
+        },
+      }
+    );
+  };
 
   return (
     <Stack gap='9px'>
@@ -30,9 +84,10 @@ export default function List() {
       </Typography>
 
       {uploadedFiles.map((item, index) => {
-        const isRejected = 'errors' in item;
+        const isRejected = 'errors' in item && !!item.errors?.length;
         const isUploading = 'status' in item && item.status === 'pending';
         const file = 'file' in item ? item.file : null;
+        const isFailed = 'status' in item && item.status === 'failed';
         const progress = 'progress' in item ? item.progress : 0;
 
         return (
@@ -73,6 +128,7 @@ export default function List() {
               >
                 {file && truncateFileName(file.name)}
               </Typography>
+
               <Typography
                 fontFamily='InterTight'
                 fontSize='14px'
@@ -99,13 +155,16 @@ export default function List() {
                 ) : (
                   <GreenStatusIcon />
                 )}
+
                 <Typography
                   fontFamily='InterTight'
                   fontSize='14px'
                   lineHeight='13.2px'
                 >
                   {isRejected
-                    ? `Failed — ${getErrorMessage(item.errors[0].code)}`
+                    ? `Failed — ${getErrorMessage(
+                        item.errors?.[0]?.code ?? ''
+                      )}`
                     : isUploading
                     ? 'Uploading'
                     : 'Completed'}
@@ -117,15 +176,27 @@ export default function List() {
                 borderRadius='8px'
                 sx={{ cursor: 'pointer' }}
                 onClick={() => {
-                  if (isUploading && file) cancel(file.name);
-                  else if (!isRejected && file) deleteFile(file.name);
-
-                  setUploadedFiles((prev) =>
-                    prev.filter((_, i) => i !== index)
-                  );
+                  if (isUploading && file) {
+                    cancel(file.name);
+                    setUploadedFiles((prev) =>
+                      prev.filter((_, i) => i !== index)
+                    );
+                  } else if (!isRejected && file) {
+                    deleteFile(file.name);
+                    setUploadedFiles((prev) =>
+                      prev.filter((_, i) => i !== index)
+                    );
+                  } else if (isFailed) {
+                    handleRetry(item, index);
+                  } else if (isRejected) {
+                    // For other errors just remove the file
+                    setUploadedFiles((prev) =>
+                      prev.filter((_, i) => i !== index)
+                    );
+                  }
                 }}
               >
-                {isRejected && !getErrorMessage(item.errors[0].code) ? (
+                {isRejected && item.errors?.[0]?.code === 'network-error' ? (
                   <RetryIcon />
                 ) : (
                   <CancelIcon />
@@ -149,7 +220,7 @@ export default function List() {
                   sx={{
                     height: '100%',
                     width: `${progress}%`,
-                    backgroundColor: '#4484FF',
+                    backgroundColor: '#3ca5f1',
                     transition: 'width 0.3s ease',
                   }}
                 />

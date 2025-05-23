@@ -52,7 +52,12 @@ export default function File() {
             setUploadedFiles((prev) =>
               prev.map((f) =>
                 'status' in f && f.file.name === file.name
-                  ? { ...f, status: 'failed' }
+                  ? {
+                      ...f,
+                      status: 'failed',
+                      progress: 0,
+                      errors: [{ code: 'network-error' }],
+                    }
                   : f
               )
             ),
